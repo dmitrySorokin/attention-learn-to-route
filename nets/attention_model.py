@@ -62,6 +62,7 @@ class AttentionModel(nn.Module):
         self.temp = 1.0
         self.allow_partial = problem.NAME == 'sdvrp'
         self.is_vrp = problem.NAME == 'cvrp' or problem.NAME == 'sdvrp'
+        self.is_rfcs = problem.NAME == 'rfcs'
         self.is_orienteering = problem.NAME == 'op'
         self.is_pctsp = problem.NAME == 'pctsp'
 
@@ -91,7 +92,7 @@ class AttentionModel(nn.Module):
             if self.is_vrp and self.allow_partial:  # Need to include the demand if split delivery allowed
                 self.project_node_step = nn.Linear(1, 3 * embedding_dim, bias=False)
         else:  # TSP
-            assert problem.NAME == "tsp", "Unsupported problem: {}".format(problem.NAME)
+            assert problem.NAME in ("tsp", "rfcs"), "Unsupported problem: {}".format(problem.NAME)
             step_context_dim = 2 * embedding_dim  # Embedding of first and last node
             node_dim = 2  # x, y
             
@@ -218,6 +219,8 @@ class AttentionModel(nn.Module):
                 ),
                 1
             )
+        elif self.is_rfcs:
+            return self.init_embed(input['loc'])
         # TSP
         return self.init_embed(input)
 
@@ -281,6 +284,7 @@ class AttentionModel(nn.Module):
         """
         # Bit ugly but we need to pass the embeddings as well.
         # Making a tuple will not work with the problem.get_cost function
+
         return sample_many(
             lambda input: self._inner(*input),  # Need to unpack tuple into arguments
             lambda input, pi: self.problem.get_costs(input[0], pi),  # Don't need embeddings as input to get_costs
