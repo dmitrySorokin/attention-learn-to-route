@@ -108,7 +108,7 @@ class RFCS(object):
             costs.append(result)
 
         # Length is distance (L2-norm of difference) from each next location from its prev and of last from first
-        return torch.tensor(costs), None
+        return torch.tensor(costs).to(dataset['loc'].device), None
 
     @staticmethod
     def make_dataset(*args, **kwargs):
